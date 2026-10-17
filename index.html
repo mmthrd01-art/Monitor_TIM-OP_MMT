@@ -2,6 +2,8 @@
 <html lang="id"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Monitoring Operasional Mitra Multi Teknik</title>
+<link rel="icon" id="fav" href="data:,">
+<link rel="apple-touch-icon" id="fav2" href="data:,">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -177,11 +179,17 @@ function setv(){const s=D.set;return`<div class="top"><h1>Pengaturan</h1></div><
  <label for="s_wa">Nomor WhatsApp HR</label><input id="s_wa" value="${esc(s.wa)}" placeholder="08xxxxxxxxxx">
  <h2 style="margin-top:22px">Sinkronisasi Firebase (opsional)</h2><p style="color:var(--mut);margin:0 0 6px">Tempel firebaseConfig dari Firebase Console (Project settings, Web app). Data disimpan di Cloud Firestore dan sinkron antar perangkat.</p><label for="s_fb">firebaseConfig</label><textarea id="s_fb" rows="6" placeholder='{ "apiKey": "...", "authDomain": "...", "projectId": "...", "appId": "..." }'>${esc(FBC?JSON.stringify(FBC,null,1):'')}</textarea><div class="row" style="margin-top:8px"><button class="sec" onclick="fbSave()">Simpan dan hubungkan</button><button class="sec" onclick="fbOff()">Putuskan</button><span id="fbst" style="color:var(--mut)">Status: ${esc(FS)}</span></div>
  <div class="row" style="margin-top:16px"><button onclick="saveS()">Simpan pengaturan</button><button class="sec" onclick="exAll()">Tarik semua data (Excel)</button><button class="dng" onclick="cf('Hapus SEMUA data aplikasi? Tindakan ini tidak bisa dibatalkan.',()=>{const s=D.set;D={karyawan:[],izin:[],evaluasi:[],monitor:[],hrop:[],hrd:[],sop:[],tim:{},set:s};sv();go(1)})">Hapus semua data</button></div></div>`}
-async function saveS(){const f=$('#s_logo').files[0];if(f)D.set.logo=await img(f,160);D.set.nama=$('#s_nama').value.trim()||'Mitra Multi Teknik';D.set.hr=$('#s_hr').value.trim();D.set.wa=$('#s_wa').value.trim();sv();toast('Pengaturan disimpan');go(1)}
+async function saveS(){const f=$('#s_logo').files[0];if(f)D.set.logo=await imgSq(f,128);D.set.nama=$('#s_nama').value.trim()||'Mitra Multi Teknik';D.set.hr=$('#s_hr').value.trim();D.set.wa=$('#s_wa').value.trim();sv();toast('Pengaturan disimpan');go(1)}
 function exAll(){const o={};['karyawan','izin','evaluasi','monitor','hrop','hrd','sop'].forEach(k=>{const c=CFG[k];o[c.t]=D[k].map(e=>Object.fromEntries(c.c.map(x=>[x[0],x[1](e)])))});xlb(o,'Semua_Data_'+today())}
 /* ---------- Router ---------- */
 const MENU=[['dash','Dashboard'],['karyawan','Data Karyawan'],['izin','Data Izin'],['evaluasi','Data Evaluasi'],['monitor','Monitoring Lapangan'],['hrop','Catatan HR Operasional'],['hrd','Catatan HRD'],['sop','Dokumen SOP'],['set','Pengaturan']];
-function go(keep){if(!keep&&typeof keep!='number'){}if(keep!==1){Q='';IF='Semua'}
+function setFav(){const n=D.set.nama||'M',L=D.set.logo;document.title=n+' - Monitoring Operasional';
+ const put=u=>['fav','fav2'].forEach(i=>{const e=document.getElementById(i);if(e)e.href=u});
+ if(!L){put('data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#1d4ed8"/><text x="32" y="44" font-size="36" font-weight="700" text-anchor="middle" fill="#fff" font-family="sans-serif">'+esc(n[0].toUpperCase())+'</text></svg>'));return}
+ if(setFav.l===L&&setFav.u){put(setFav.u);return}
+ put(L);const im=new Image();im.onload=()=>{try{const c=document.createElement('canvas');c.width=c.height=96;const x=c.getContext('2d'),k=Math.min(im.width,im.height);x.drawImage(im,(im.width-k)/2,(im.height-k)/2,k,k,0,0,96,96);setFav.l=L;setFav.u=c.toDataURL('image/png');put(setFav.u)}catch(e){}};im.src=L}
+function imgSq(file,sz){return new Promise(res=>{const r=new FileReader();r.onload=()=>{const i=new Image();i.onload=()=>{const c=document.createElement('canvas');c.width=c.height=sz;const k=Math.min(i.width,i.height);c.getContext('2d').drawImage(i,(i.width-k)/2,(i.height-k)/2,k,k,0,0,sz,sz);res(c.toDataURL('image/png'))};i.onerror=()=>res('');i.src=r.result};r.readAsDataURL(file)})}
+function go(keep){setFav();if(!keep&&typeof keep!='number'){}if(keep!==1){Q='';IF='Semua'}
  const s=D.set,wa=(s.wa||'').replace(/\D/g,'').replace(/^0/,'62');
  $('#nav').innerHTML=`<div class="brand">${s.logo?`<img src="${s.logo}" alt="">`:`<i>${esc(s.nama[0]||'M')}</i>`}<span>${esc(s.nama)}</span></div>`+MENU.map(m=>`<a class="${V==m[0]?'on':''}" tabindex="0" onclick="V='${m[0]}';go()">${m[1]}</a>`).join('')+`<a onclick="togTheme()">Ganti tema Dark/White</a><a onclick="logout()">Keluar</a><div class="hr">${s.hr?'HR: '+esc(s.hr)+'<br>':''}${wa?`<a href="https://wa.me/${wa}" target="_blank" rel="noopener">Hubungi via WhatsApp</a>`:''}</div>`;
  $('#dl').innerHTML=D.karyawan.map(k=>`<option value="${esc(k.nama)}">${esc(k.jabatan)}</option>`).join('');
@@ -214,7 +222,7 @@ function fbPush(only){if(!FB)return;(only?[only]:[...COLS,'tim','set']).forEach(
   Object.keys(FC).filter(x=>x.startsWith('tim|')).forEach(x=>{const d=x.slice(4);if(!D.tim[d]){delete FC[x];FB.collection('tim').doc(d).delete().catch(fbErr)}});return}
  D[k].forEach((e,i)=>{e.ord=i;const j=JSON.stringify(e);if(FC[k+'|'+e.id]!=j){FC[k+'|'+e.id]=j;FB.collection(k).doc(e.id).set(e).catch(fbErr)}});
  Object.keys(FC).filter(x=>x.startsWith(k+'|')).forEach(x=>{const id=x.slice(k.length+1);if(!D[k].some(e=>e.id==id)){delete FC[x];FB.collection(k).doc(id).delete().catch(fbErr)}})})}
-document.title=D.set.nama+' - Monitoring Operasional';/* ---------- Login ---------- */
+setFav();/* ---------- Login ---------- */
 const AUTH={u:'Admin123',p:'1234'};
 const authed=()=>{try{return sessionStorage.getItem('mmt_auth')=='1'||localStorage.getItem('mmt_auth')=='1'}catch(e){return false}};
 function logout(){try{sessionStorage.removeItem('mmt_auth');localStorage.removeItem('mmt_auth')}catch(e){}location.reload()}
