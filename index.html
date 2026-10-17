@@ -67,7 +67,7 @@ const JAB=['Teknisi','Helper','Magang/PSG','Supervisor','Admin','HR'],AREAS=['Ma
 const JENIS=['Izin','Sakit','Cuti','Libur','Telat Izin','Cepat Pulang','Tanpa Keterangan'],ABS=['Izin','Sakit','Cuti','Libur','Tanpa Keterangan'];
 const COL=['#1e3a8a','#2563eb','#38bdf8','#7dd3fc','#6366f1','#0d9488','#f59e0b','#94a3b8'];
 const KEY='mmt_ops_v1';
-let D={karyawan:[],izin:[],evaluasi:[],monitor:[],hrop:[],hrd:[],sop:[],tim:{},set:{nama:'Mitra Multi Teknik',hr:'',wa:'',logo:''}};
+let D={karyawan:[],izin:[],evaluasi:[],monitor:[],hrop:[],hrd:[],sop:[],pkl:[],tim:{},set:{nama:'Mitra Multi Teknik',hr:'',wa:'',logo:''}};
 try{const s=localStorage.getItem(KEY);if(s)D=Object.assign(D,JSON.parse(s))}catch(e){}
 let V='dash',IF='Semua',Q='',TD='',PIE={},CB=null,TH=''; try{TH=localStorage.getItem('mmt_theme')||''}catch(e){}
 const $=s=>document.querySelector(s),uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
@@ -76,13 +76,13 @@ TD=today();
 const loc=()=>{try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){toast('Penyimpanan penuh. Hapus foto lama atau ekspor data.')}};
 let FB=null,FC={},FREADY=false,FS='Tidak terhubung',FBC=null,DR=null;const DEFAULT_FB={apiKey:"AIzaSyCqkDognQU7YyzS-11AymnPQXeHk7RqZqU",authDomain:"laporan-monitoring-tim-op.firebaseapp.com",projectId:"laporan-monitoring-tim-op",storageBucket:"laporan-monitoring-tim-op.firebasestorage.app",messagingSenderId:"1054047923272",appId:"1:1054047923272:web:c873a747609b5d12c13c7d",measurementId:"G-M78LVKEJM9"};
 try{const st=localStorage.getItem('mmt_fb');FBC=st==='off'?null:st?JSON.parse(st):DEFAULT_FB}catch(e){FBC=DEFAULT_FB}
-const COLS=['karyawan','izin','evaluasi','monitor','hrop','hrd','sop'];
+const COLS=['karyawan','pkl','izin','evaluasi','monitor','hrop','hrd','sop'];
 const sv=()=>{loc();if(FREADY)fbPush()};
 function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',2800)}
 function theme(t){if(t)document.documentElement.setAttribute('data-theme',t);else document.documentElement.removeAttribute('data-theme');}
 function togTheme(){const dark=document.documentElement.getAttribute('data-theme')?document.documentElement.getAttribute('data-theme')=='dark':matchMedia('(prefers-color-scheme:dark)').matches;TH=dark?'light':'dark';theme(TH);try{localStorage.setItem('mmt_theme',TH)}catch(e){}}
 theme(TH);
-const jabOf=n=>(D.karyawan.find(k=>k.nama.toLowerCase()==String(n||'').trim().toLowerCase())||{}).jabatan||'';
+const jabOf=n=>{const x=String(n||'').trim().toLowerCase();return(D.karyawan.find(k=>k.nama.toLowerCase()==x)||{}).jabatan||(D.pkl.some(k=>k.nama.toLowerCase()==x)?'PKL Sekolah':'')};
 const ov=(e,a,b)=>e.tgl<=b&&(e.sampai||e.tgl)>=a;
 const fd=d=>d?d.split('-').reverse().join('/'):'';
 function weekR(){const d=new Date(),w=(d.getDay()+6)%7,a=new Date(d);a.setDate(d.getDate()-w);const b=new Date(a);b.setDate(a.getDate()+6);return[a.toLocaleDateString('sv'),b.toLocaleDateString('sv')]}
@@ -110,7 +110,7 @@ function zoom(s){modal(`<img src="${s}" style="width:100%;border-radius:10px"><p
 function cf(msg,fn){CB=fn;modal(`<h2>Konfirmasi</h2><p>${esc(msg)}</p><div class="row" style="justify-content:flex-end"><button class="sec" onclick="cm()">Batal</button><button onclick="cm();CB()">Hapus</button></div>`)}
 function listM(title,rows){modal(`<h2>${esc(title)}</h2>${rows.length?`<div class="tw"><table style="min-width:0"><tr><th>Nama</th><th>Jabatan</th><th>Keterangan</th></tr>${rows.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join('')}</table></div>`:'<div class="empty">Belum ada data</div>'}<p style="text-align:right"><button class="sec" onclick="cm()">Tutup</button></p>`)}
 const stNow=n=>{const e=D.izin.find(x=>x.nama.toLowerCase()==n.toLowerCase()&&ov(x,today(),today()));return e?e.jenis+(e.alasan?' - '+e.alasan:''):'Hadir / tidak ada izin'};
-function kl(j){listM('Daftar '+j+' ('+D.karyawan.filter(k=>k.jabatan==j).length+')',D.karyawan.filter(k=>k.jabatan==j).map(k=>[k.nama,k.jabatan,[k.ket,'Hari ini: '+stNow(k.nama)].filter(Boolean).join(' | ')]))}
+function kl(j){if(j=='PKL Sekolah'){listM('Daftar PKL Sekolah ('+D.pkl.length+')',D.pkl.map(k=>[k.nama,'PKL Sekolah',[k.sekolah,k.kelas?'Kelas '+k.kelas:'',k.jurusan].filter(Boolean).join(' | ')]));return}listM('Daftar '+j+' ('+D.karyawan.filter(k=>k.jabatan==j).length+')',D.karyawan.filter(k=>k.jabatan==j).map(k=>[k.nama,k.jabatan,[k.ket,'Hari ini: '+stNow(k.nama)].filter(Boolean).join(' | ')]))}
 const izT=()=>D.izin.filter(e=>ov(e,today(),today()));
 function il(j){const r=izT().filter(e=>j=='Semua'||e.jenis==j);listM('Izin hari ini: '+j+' ('+r.length+')',r.map(e=>[e.nama,jabOf(e.nama),e.jenis+(e.alasan?' - '+e.alasan:'')]))}
 const ilp=i=>il(PIE.ilp[i].l);
@@ -133,6 +133,7 @@ const foto=e=>e.foto?`<img class="th" src="${e.foto}" alt="Foto bukti" onclick="
 const CFG={
 karyawan:{t:'Data Karyawan',f:[{k:'nama',l:'Nama',t:'text'},{k:'jabatan',l:'Jabatan',t:'select',o:JAB},{k:'ket',l:'Keterangan',t:'text'}],c:[['Nama',e=>e.nama],['Jabatan',e=>e.jabatan],['Keterangan',e=>e.ket]]},
 izin:{t:'Data Izin',f:[{...T,l:'Tanggal mulai'},{k:'sampai',l:'Sampai tanggal (opsional)',t:'date'},N,{k:'jenis',l:'Jenis',t:'select',o:JENIS},{k:'alasan',l:'Alasan',t:'textarea'},{k:'foto',l:'Foto bukti',t:'file'}],c:[['Tanggal',e=>fd(e.tgl)+(e.sampai?' - '+fd(e.sampai):'')],['Nama',e=>e.nama],['Jabatan',e=>jabOf(e.nama)],['Jenis',e=>e.jenis],['Alasan',e=>e.alasan],['Foto bukti',e=>e.foto?'Ada':'-',foto]]},
+pkl:{t:'Data PKL Sekolah',f:[{k:'nama',l:'Nama',t:'text'},{k:'sekolah',l:'Nama Sekolah',t:'text'},{k:'kelas',l:'Kelas',t:'text'},{k:'jurusan',l:'Jurusan',t:'text'}],c:[['Nama',e=>e.nama],['Nama Sekolah',e=>e.sekolah],['Kelas',e=>e.kelas],['Jurusan',e=>e.jurusan]]},
 evaluasi:{t:'Data Evaluasi',f:[{...N,l:'Nama Teknisi'},{k:'status',l:'Status',t:'select',o:['Teguran 1','Teguran 2','SP1','SP2']},{...T,k:'tgl'},{k:'ket',l:'Keterangan',t:'textarea'}],c:[['Tanggal',e=>fd(e.tgl)],['Nama Teknisi',e=>e.nama],['Jabatan',e=>jabOf(e.nama)],['Status',e=>e.status],['Keterangan',e=>e.ket]]},
 monitor:{t:'Catatan Monitoring Lapangan',f:[T,{k:'area',l:'Area',t:'select',o:AREAS},{...N,k:'teknisi',l:'Nama Teknisi'},{...N,k:'helper',l:'Helper'},{...N,k:'magang',l:'Magang/PSG'},{k:'cs',l:'Nama CS',t:'text'},{k:'alamat',l:'Alamat CS',t:'text'},{k:'catatan',l:'Catatan',t:'textarea'},{k:'tindakan',l:'Tindakan',t:'textarea'},{k:'khusus',l:'Tindakan Khusus',t:'select',o:['-','Teguran Lisan','SP1','SP2']}],req:0,c:[['Tanggal',e=>fd(e.tgl)],['Tim',e=>e.area+': '+[e.teknisi,e.helper,e.magang].filter(Boolean).join(' - ')],['Lokasi',e=>[e.cs,e.alamat].filter(Boolean).join(', ')],['Catatan',e=>e.catatan],['Tindakan',e=>e.tindakan],['Tindakan Khusus',e=>e.khusus]]},
 hrop:{t:'Catatan HR Operasional',f:[T,{k:'catatan',l:'Catatan',t:'textarea'},{...N,l:'Ditujukan kepada (Nama)'}],c:[['Tanggal',e=>fd(e.tgl)],['Catatan',e=>e.catatan],['Ditujukan kepada',e=>e.nama],['Jabatan',e=>jabOf(e.nama)]]},
@@ -161,20 +162,20 @@ function dash(){const t=today(),K=D.karyawan,tot=K.length,w=weekR(),mo=[t.slice(
  const ab=(a,b)=>new Set(D.izin.filter(e=>ABS.includes(e.jenis)&&ov(e,a,b)).map(e=>e.nama.toLowerCase())).size;
  const per=[['Hari ini',t,t],['Minggu ini',w[0],w[1]],['Bulan ini',mo[0],mo[1]]].map(p=>{const a=ab(p[1],p[2]);return`<div class="stat"><small>${p[0]}</small><b>${Math.max(0,tot-a)}</b><small>siap bertugas dari ${tot} karyawan, ${a} ada izin/libur</small></div>`}).join('');
  const cn=j=>K.filter(k=>k.jabatan==j).length,iz=izT();
- const pk=JAB.map(j=>({l:j,v:cn(j)}));const pkH=bars(pk,'kl');
+ const pk=[...JAB.map(j=>({l:j,v:cn(j)})),{l:'PKL Sekolah',v:D.pkl.length}];const pkH=bars(pk,'kl');
  const chips=JENIS.map(j=>`<span class="chip" onclick="il('${j}')">${j}: ${iz.filter(e=>e.jenis==j).length}</span>`).join('');
  const tm=D.tim[TD]||[],pts=[];for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const s=d.toLocaleDateString('sv');pts.push({l:s.slice(8)+'/'+s.slice(5,7),v:(D.tim[s]||[]).length})}
  return`<div class="top"><h1>Dashboard Operasional</h1><div class="row"><span style="color:var(--mut)">${new Date().toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</span><button class="sec" onclick="exD()">Tarik Data Excel</button></div></div>
  <div class="card"><h2>Jumlah Karyawan Operasional</h2><div class="g g3">${per}</div>
- <div class="g g3" style="margin-top:12px"><div class="stat cl" onclick="kl('Teknisi')"><small>Jumlah Teknisi (klik untuk daftar)</small><b>${cn('Teknisi')}</b></div><div class="stat cl" onclick="kl('Helper')"><small>Jumlah Helper (klik untuk daftar)</small><b>${cn('Helper')}</b></div><div class="stat cl" onclick="kl('Magang/PSG')"><small>Magang/PSG</small><b>${cn('Magang/PSG')}</b></div></div></div>
- <div class="g g2"><div class="card col"><h2>Komposisi Karyawan <span style="color:var(--mut);font-weight:500">(total ${tot}, klik batang untuk daftar)</span></h2>${pkH}</div>
+ <div class="g g3" style="margin-top:12px"><div class="stat cl" onclick="kl('Teknisi')"><small>Jumlah Teknisi (klik untuk daftar)</small><b>${cn('Teknisi')}</b></div><div class="stat cl" onclick="kl('Helper')"><small>Jumlah Helper (klik untuk daftar)</small><b>${cn('Helper')}</b></div><div class="stat cl" onclick="kl('Magang/PSG')"><small>Magang/PSG</small><b>${cn('Magang/PSG')}</b></div><div class="stat cl" onclick="kl('PKL Sekolah')"><small>PKL Sekolah</small><b>${D.pkl.length}</b></div></div></div>
+ <div class="g g2"><div class="card col"><h2>Komposisi Karyawan <span style="color:var(--mut);font-weight:500">(total ${tot+D.pkl.length} termasuk PKL, klik batang untuk daftar)</span></h2>${pkH}</div>
  <div class="card"><h2>Tim OP Izin Hari Ini</h2><div class="stat cl" style="margin-bottom:8px" onclick="il('Semua')"><small>Total tidak hadir/izin (klik untuk daftar)</small><b>${iz.length}</b></div><div class="chips">${chips}</div>${pie(JENIS.map(j=>({l:j,v:iz.filter(e=>e.jenis==j).length})),'ilp')}</div></div>
  <div class="card"><h2>Grafik Jumlah Tim Jalan (14 hari terakhir)</h2>${line(pts)}</div>
  <div class="card"><div class="top" style="margin-bottom:8px"><h2 style="margin:0">Tim Jalan - ${tm.length} tim</h2><div class="row"><input type="date" value="${TD}" onchange="setTD(this.value)" aria-label="Tanggal"><button onclick="addTim()">+ Tambah Tim</button></div></div>
  ${tm.length?tm.map((x,i)=>`<div class="team"><div class="row" style="justify-content:space-between"><span><b>Tim ${i+1}</b> &nbsp;Area: ${esc(x.area)}</span><span><button class="sec sm" onclick="edTim(${i})">Ubah</button><button class="dng" onclick="delTim(${i})">Hapus</button></span></div><div style="margin-top:6px">${[['Teknisi',x.t],['Helper 1',x.h1],['Helper 2',x.h2],['Magang/PSG',x.m]].filter(r=>r[1]).map(r=>`<span class="tag">${r[0]}: ${esc(r[1])}</span>`).join('')||'<span style="color:var(--mut)">Belum ada anggota</span>'}</div></div>`).join(''):'<div class="empty">Belum ada tim jalan pada tanggal ini.</div>'}</div>`}
 function exD(){const tim=[];Object.keys(D.tim).sort().forEach(d=>D.tim[d].forEach((x,i)=>tim.push({Tanggal:fd(d),Tim:'Tim '+(i+1),Area:x.area,Teknisi:x.t,'Helper 1':x.h1,'Helper 2':x.h2,'Magang/PSG':x.m})));
  const iz=izT().map(e=>({Nama:e.nama,Jabatan:jabOf(e.nama),Jenis:e.jenis,Alasan:e.alasan}));
- const rk=[];JAB.forEach(j=>rk.push({Jabatan:j,Jumlah:D.karyawan.filter(k=>k.jabatan==j).length}));xlb({'Rekap Karyawan':rk,'Izin Hari Ini':iz,'Tim Jalan':tim},'Dashboard_'+today())}
+ const rk=[];JAB.forEach(j=>rk.push({Jabatan:j,Jumlah:D.karyawan.filter(k=>k.jabatan==j).length}));rk.push({Jabatan:'PKL Sekolah',Jumlah:D.pkl.length});xlb({'Rekap Karyawan':rk,'Izin Hari Ini':iz,'Tim Jalan':tim},'Dashboard_'+today())}
 /* ---------- Pengaturan ---------- */
 function setv(){const s=D.set;return`<div class="top"><h1>Pengaturan</h1></div><div class="card" style="max-width:560px">
  <label>Logo</label><div class="row">${s.logo?`<img class="th" src="${s.logo}" alt="Logo">`:''}<input id="s_logo" type="file" accept="image/*" style="flex:1"></div>
@@ -182,11 +183,11 @@ function setv(){const s=D.set;return`<div class="top"><h1>Pengaturan</h1></div><
  <label for="s_hr">Nama HR</label><input id="s_hr" value="${esc(s.hr)}">
  <label for="s_wa">Nomor WhatsApp HR</label><input id="s_wa" value="${esc(s.wa)}" placeholder="08xxxxxxxxxx">
  <h2 style="margin-top:22px">Sinkronisasi Firebase (opsional)</h2><p style="color:var(--mut);margin:0 0 6px">Tempel firebaseConfig dari Firebase Console (Project settings, Web app). Data disimpan di Cloud Firestore dan sinkron antar perangkat.</p><label for="s_fb">firebaseConfig</label><textarea id="s_fb" rows="6" placeholder='{ "apiKey": "...", "authDomain": "...", "projectId": "...", "appId": "..." }'>${esc(FBC?JSON.stringify(FBC,null,1):'')}</textarea><div class="row" style="margin-top:8px"><button class="sec" onclick="fbSave()">Simpan dan hubungkan</button><button class="sec" onclick="fbOff()">Putuskan</button><span id="fbst" style="color:var(--mut)">Status: ${esc(FS)}</span></div>
- <div class="row" style="margin-top:16px"><button onclick="saveS()">Simpan pengaturan</button><button class="sec" onclick="exAll()">Tarik semua data (Excel)</button><button class="dng" onclick="cf('Hapus SEMUA data aplikasi? Tindakan ini tidak bisa dibatalkan.',()=>{const s=D.set;D={karyawan:[],izin:[],evaluasi:[],monitor:[],hrop:[],hrd:[],sop:[],tim:{},set:s};sv();go(1)})">Hapus semua data</button></div></div>`}
+ <div class="row" style="margin-top:16px"><button onclick="saveS()">Simpan pengaturan</button><button class="sec" onclick="exAll()">Tarik semua data (Excel)</button><button class="dng" onclick="cf('Hapus SEMUA data aplikasi? Tindakan ini tidak bisa dibatalkan.',()=>{const s=D.set;D={karyawan:[],izin:[],evaluasi:[],monitor:[],hrop:[],hrd:[],sop:[],pkl:[],tim:{},set:s};sv();go(1)})">Hapus semua data</button></div></div>`}
 async function saveS(){const f=$('#s_logo').files[0];if(f)D.set.logo=await imgSq(f,128);D.set.nama=$('#s_nama').value.trim()||'Mitra Multi Teknik';D.set.hr=$('#s_hr').value.trim();D.set.wa=$('#s_wa').value.trim();sv();toast('Pengaturan disimpan');go(1)}
-function exAll(){const o={};['karyawan','izin','evaluasi','monitor','hrop','hrd','sop'].forEach(k=>{const c=CFG[k];o[c.t]=D[k].map(e=>Object.fromEntries(c.c.map(x=>[x[0],x[1](e)])))});xlb(o,'Semua_Data_'+today())}
+function exAll(){const o={};['karyawan','pkl','izin','evaluasi','monitor','hrop','hrd','sop'].forEach(k=>{const c=CFG[k];o[c.t]=D[k].map(e=>Object.fromEntries(c.c.map(x=>[x[0],x[1](e)])))});xlb(o,'Semua_Data_'+today())}
 /* ---------- Router ---------- */
-const MENU=[['dash','Dashboard'],['karyawan','Data Karyawan'],['izin','Data Izin'],['evaluasi','Data Evaluasi'],['monitor','Monitoring Lapangan'],['hrop','Catatan HR Operasional'],['hrd','Catatan HRD'],['sop','Dokumen SOP'],['set','Pengaturan']];
+const MENU=[['dash','Dashboard'],['karyawan','Data Karyawan'],['pkl','PKL Sekolah'],['izin','Data Izin'],['evaluasi','Data Evaluasi'],['monitor','Monitoring Lapangan'],['hrop','Catatan HR Operasional'],['hrd','Catatan HRD'],['sop','Dokumen SOP'],['set','Pengaturan']];
 function setFav(){const n=D.set.nama||'M',L=D.set.logo;document.title=n+' - Monitoring Operasional';
  const put=u=>['fav','fav2'].forEach(i=>{const e=document.getElementById(i);if(e)e.href=u});
  if(!L){put('data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#1d4ed8"/><text x="32" y="44" font-size="36" font-weight="700" text-anchor="middle" fill="#fff" font-family="sans-serif">'+esc(n[0].toUpperCase())+'</text></svg>'));return}
@@ -196,7 +197,7 @@ function imgSq(file,sz){return new Promise(res=>{const r=new FileReader();r.onlo
 function go(keep){setFav();if(!keep&&typeof keep!='number'){}if(keep!==1){Q='';IF='Semua'}
  const s=D.set,wa=(s.wa||'').replace(/\D/g,'').replace(/^0/,'62');
  $('#nav').innerHTML=`<div class="brand">${s.logo?`<img src="${s.logo}" alt="">`:`<i>${esc(s.nama[0]||'M')}</i>`}<span>${esc(s.nama)}</span></div>`+MENU.map(m=>`<a class="${V==m[0]?'on':''}" tabindex="0" onclick="V='${m[0]}';go()">${m[1]}</a>`).join('')+`<a onclick="togTheme()">Ganti tema Dark/White</a><a onclick="logout()">Keluar</a><div class="hr">${s.hr?'HR: '+esc(s.hr)+'<br>':''}${wa?`<a href="https://wa.me/${wa}" target="_blank" rel="noopener">Hubungi via WhatsApp</a>`:''}</div>`;
- $('#dl').innerHTML=D.karyawan.map(k=>`<option value="${esc(k.nama)}">${esc(k.jabatan)}</option>`).join('');
+ $('#dl').innerHTML=D.karyawan.map(k=>`<option value="${esc(k.nama)}">${esc(k.jabatan)}</option>`).join('')+D.pkl.map(k=>`<option value="${esc(k.nama)}">PKL Sekolah</option>`).join('');
  $('#main').innerHTML=V=='dash'?dash():V=='set'?setv():lst(V);
  const si=document.querySelector('input[type=search]');if(si&&keep===1&&Q){si.focus();si.setSelectionRange(Q.length,Q.length)}}
 /* ---------- Urutan karyawan (tarik/geser) ---------- */
