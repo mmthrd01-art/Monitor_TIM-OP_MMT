@@ -63,7 +63,7 @@ tr.drag{background:var(--soft);box-shadow:0 4px 14px rgba(0,0,0,.28)}tr.drag .hd
 <div class="app"><nav id="nav"></nav><main id="main"></main></div>
 <datalist id="dl"></datalist><div id="mo"></div><div id="toast"></div>
 <script>
-const JAB=['Teknisi','Helper','Magang/PSG','Supervisor','Admin','HR'],AREAS=['Makassar','Gowa','BTP','SPK','Kantoran'];
+const JAB=['Teknisi','Helper','Magang/PSG','Supervisor','Admin','HR'],AREAS=['Makassar 1','Makassar 2','Gowa','BTP','SPK','Kantoran','Lainnya'];
 const JENIS=['Izin','Sakit','Cuti','Libur','Telat Izin','Cepat Pulang','Tanpa Keterangan'],ABS=['Izin','Sakit','Cuti','Libur','Tanpa Keterangan'];
 const COL=['#1e3a8a','#2563eb','#38bdf8','#7dd3fc','#6366f1','#0d9488','#f59e0b','#94a3b8'];
 const KEY='mmt_ops_v1';
@@ -121,7 +121,7 @@ function kmp(i){kl(PIE.kmp[i].l)}
 /* ---------- Form ---------- */
 function jb(el){const s=el.parentNode.querySelector('small.jb');if(s)s.textContent=jabOf(el.value)?'Jabatan: '+jabOf(el.value):''}
 function frm(title,fs,init,ok){const b=fs.map(f=>{let v=init[f.k]??(f.d=='@today'?today():f.d)??'',i;
- if(f.t=='select')i=`<select id="f_${f.k}">${f.o.map(o=>`<option ${o==v?'selected':''}>${esc(o)}</option>`).join('')}</select>`;
+ if(f.t=='select')i=`<select id="f_${f.k}">${(v&&!f.o.includes(v)?[v,...f.o]:f.o).map(o=>`<option ${o==v?'selected':''}>${esc(o)}</option>`).join('')}</select>`;
  else if(f.t=='textarea')i=`<textarea id="f_${f.k}" rows="3">${esc(v)}</textarea>`;
  else if(f.t=='file')i=`<input id="f_${f.k}" type="file" accept="image/*">${v?'<small>Sudah ada gambar. Pilih file baru untuk mengganti.</small>':''}`;
  else if(f.t=='name')i=`<input id="f_${f.k}" list="dl" autocomplete="off" value="${esc(v)}" oninput="jb(this)"><small class="jb">${jabOf(v)?'Jabatan: '+esc(jabOf(v)):''}</small>`;
