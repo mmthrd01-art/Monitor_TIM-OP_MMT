@@ -233,5 +233,5 @@ function showLogin(){const s=D.set,d=document.createElement('div');d.id='lgn';d.
  <label class="ck"><input id="lk" type="checkbox">Tetap masuk di perangkat ini</label><div class="err" id="le" role="alert"></div><button id="lb" style="width:100%;margin-top:6px">Masuk</button></div>`;
  document.body.appendChild(d);$('#lb').onclick=doLogin;d.addEventListener('keydown',e=>{if(e.key=='Enter')doLogin()});$('#lu').focus()}
 function start(){go();fbInit()}
-if(authed())start();else showLogin();
+if(authed())start();else showLogin()
 </script></body></html>
