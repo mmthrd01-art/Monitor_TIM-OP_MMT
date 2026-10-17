@@ -47,6 +47,8 @@ th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);verti
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 18px);background:var(--side);color:#fff;padding:9px 16px;border-radius:99px;display:none;z-index:30}
 .hd{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;color:var(--pri);font-weight:700;white-space:nowrap}
 tr.drag{background:var(--soft);box-shadow:0 4px 14px rgba(0,0,0,.28)}tr.drag .hd{cursor:grabbing}
+.card.col{display:flex;flex-direction:column}.bars{display:flex;flex-direction:column;justify-content:space-evenly;gap:14px;flex:1;padding:4px 0}
+.br{cursor:pointer}.br .l{display:flex;justify-content:space-between;font-weight:600;margin-bottom:5px}.br .l b{color:var(--pri)}.br .t{height:24px;background:var(--soft);border-radius:8px;overflow:hidden}.br .f{height:100%;border-radius:8px;transition:width .4s}.br:hover .t{outline:2px solid var(--acc)}
 .lgn{position:fixed;inset:0;z-index:50;background:linear-gradient(160deg,#0b2a6b,#1d4ed8 60%,#38bdf8);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}
 .lgn .box{background:var(--card);color:var(--ink);border-radius:18px;padding:26px 24px;width:min(380px,100%);box-shadow:0 20px 50px rgba(0,0,0,.35)}
 .lgn .box h1{font-size:20px;margin:10px 0 2px}.lgn .logo{width:54px;height:54px;border-radius:14px;background:var(--acc);color:#07235a;display:grid;place-items:center;font-weight:800;font-size:24px;object-fit:cover}
@@ -94,6 +96,8 @@ function pie(items,fn){items=items.filter(i=>i.v>0);const tot=items.reduce((a,b)
  items.forEach((it,i)=>{const c=COL[i%COL.length];if(items.length==1)s+=`<circle r="1" fill="${c}" style="cursor:pointer" onclick="${fn}(${i})"/>`;else{const b=a+it.v/tot*2*Math.PI,x1=Math.cos(a),y1=Math.sin(a),x2=Math.cos(b),y2=Math.sin(b);s+=`<path d="M0 0L${x1} ${y1}A1 1 0 ${b-a>Math.PI?1:0} 1 ${x2} ${y2}Z" fill="${c}" stroke="var(--card)" stroke-width=".02" style="cursor:pointer" onclick="${fn}(${i})"><title>${esc(it.l)}: ${it.v}</title></path>`;a=b}});
  s+=`<circle r=".52" fill="var(--card)"/><text y=".08" text-anchor="middle" font-size=".36" font-weight="800" fill="var(--ink)">${tot}</text></svg>`;
  return`<div class="pw">${s}<div class="lg">${items.map((it,i)=>`<span onclick="${fn}(${i})"><i style="background:${COL[i%COL.length]}"></i>${esc(it.l)}: <b>${it.v}</b></span>`).join('')}</div></div>`}
+function bars(items,fn){const tot=items.reduce((a,b)=>a+b.v,0),m=Math.max(1,...items.map(i=>i.v));if(!tot)return'<div class="empty">Belum ada data karyawan</div>';
+ return`<div class="bars">${items.map((it,i)=>`<div class="br" role="button" tabindex="0" onclick="${fn}('${it.l}')" onkeydown="if(event.key=='Enter')${fn}('${it.l}')"><div class="l"><span>${esc(it.l)}</span><span><b>${it.v}</b> <small style="color:var(--mut)">(${Math.round(it.v/tot*100)}%)</small></span></div><div class="t"><div class="f" style="width:${it.v/m*100}%;background:${COL[i%COL.length]}"></div></div></div>`).join('')}</div>`}
 function line(pts){const W=620,H=190,p=30,m=Math.max(1,...pts.map(x=>x.v)),X=i=>p+i*(W-2*p)/(pts.length-1),Y=v=>H-24-(v/m)*(H-52);
  let s=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" role="img" aria-label="Grafik jumlah tim jalan">`;
  for(let i=0;i<=m&&m<=8;i++)s+=`<line x1="${p}" x2="${W-p}" y1="${Y(i)}" y2="${Y(i)}" stroke="var(--line)"/><text x="${p-8}" y="${Y(i)+4}" text-anchor="end" font-size="10" fill="var(--mut)">${i}</text>`;
@@ -157,13 +161,13 @@ function dash(){const t=today(),K=D.karyawan,tot=K.length,w=weekR(),mo=[t.slice(
  const ab=(a,b)=>new Set(D.izin.filter(e=>ABS.includes(e.jenis)&&ov(e,a,b)).map(e=>e.nama.toLowerCase())).size;
  const per=[['Hari ini',t,t],['Minggu ini',w[0],w[1]],['Bulan ini',mo[0],mo[1]]].map(p=>{const a=ab(p[1],p[2]);return`<div class="stat"><small>${p[0]}</small><b>${Math.max(0,tot-a)}</b><small>siap bertugas dari ${tot} karyawan, ${a} ada izin/libur</small></div>`}).join('');
  const cn=j=>K.filter(k=>k.jabatan==j).length,iz=izT();
- const pk=JAB.map(j=>({l:j,v:cn(j)}));const pkH=pie(pk,'kmp');
+ const pk=JAB.map(j=>({l:j,v:cn(j)}));const pkH=bars(pk,'kl');
  const chips=JENIS.map(j=>`<span class="chip" onclick="il('${j}')">${j}: ${iz.filter(e=>e.jenis==j).length}</span>`).join('');
  const tm=D.tim[TD]||[],pts=[];for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const s=d.toLocaleDateString('sv');pts.push({l:s.slice(8)+'/'+s.slice(5,7),v:(D.tim[s]||[]).length})}
  return`<div class="top"><h1>Dashboard Operasional</h1><div class="row"><span style="color:var(--mut)">${new Date().toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</span><button class="sec" onclick="exD()">Tarik Data Excel</button></div></div>
  <div class="card"><h2>Jumlah Karyawan Operasional</h2><div class="g g3">${per}</div>
  <div class="g g3" style="margin-top:12px"><div class="stat cl" onclick="kl('Teknisi')"><small>Jumlah Teknisi (klik untuk daftar)</small><b>${cn('Teknisi')}</b></div><div class="stat cl" onclick="kl('Helper')"><small>Jumlah Helper (klik untuk daftar)</small><b>${cn('Helper')}</b></div><div class="stat cl" onclick="kl('Magang/PSG')"><small>Magang/PSG</small><b>${cn('Magang/PSG')}</b></div></div></div>
- <div class="g g2"><div class="card"><h2>Komposisi Karyawan</h2>${pkH}</div>
+ <div class="g g2"><div class="card col"><h2>Komposisi Karyawan <span style="color:var(--mut);font-weight:500">(total ${tot}, klik batang untuk daftar)</span></h2>${pkH}</div>
  <div class="card"><h2>Tim OP Izin Hari Ini</h2><div class="stat cl" style="margin-bottom:8px" onclick="il('Semua')"><small>Total tidak hadir/izin (klik untuk daftar)</small><b>${iz.length}</b></div><div class="chips">${chips}</div>${pie(JENIS.map(j=>({l:j,v:iz.filter(e=>e.jenis==j).length})),'ilp')}</div></div>
  <div class="card"><h2>Grafik Jumlah Tim Jalan (14 hari terakhir)</h2>${line(pts)}</div>
  <div class="card"><div class="top" style="margin-bottom:8px"><h2 style="margin:0">Tim Jalan - ${tm.length} tim</h2><div class="row"><input type="date" value="${TD}" onchange="setTD(this.value)" aria-label="Tanggal"><button onclick="addTim()">+ Tambah Tim</button></div></div>
