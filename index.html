@@ -238,13 +238,20 @@ function fbPush(only){if(!FB)return;(only?[only]:[...COLS,'tim','set']).forEach(
 setFav();/* ---------- Login ---------- */
 const AUTH={u:'Admin123',p:'1234'};
 const authed=()=>{try{return sessionStorage.getItem('mmt_auth')=='1'||localStorage.getItem('mmt_auth')=='1'}catch(e){return false}};
-function logout(){try{sessionStorage.removeItem('mmt_auth');localStorage.removeItem('mmt_auth')}catch(e){}location.reload()}
-function doLogin(){const u=$('#lu').value.trim(),p=$('#lp').value;if(u==AUTH.u&&p==AUTH.p){try{(($('#lk').checked?localStorage:sessionStorage)).setItem('mmt_auth','1')}catch(e){}$('#lgn').remove();start()}else{$('#le').textContent='Username atau password salah.';$('#lp').value='';$('#lp').focus()}}
-function showLogin(){const s=D.set,d=document.createElement('div');d.id='lgn';d.className='lgn';
+async function logout(){try{sessionStorage.removeItem('mmt_auth');localStorage.removeItem('mmt_auth')}catch(e){}try{if(AU)await AU.signOut()}catch(e){}location.reload()}
+let AU=null,started=false;
+async function doLogin(){const u=$('#lu').value.trim(),p=$('#lp').value;
+ if(!u||!p){$('#le').textContent='Isi username dan password.';return}
+ if(!AU){if(u==AUTH.u&&p==AUTH.p){try{(($('#lk').checked?localStorage:sessionStorage)).setItem('mmt_auth','1')}catch(e){}$('#lgn').remove();start()}else{$('#le').textContent='Username atau password salah.';$('#lp').value=''}return}
+ $('#le').textContent='Memeriksa...';
+ try{await AU.setPersistence(firebase.auth.Auth.Persistence[$('#lk').checked?'LOCAL':'SESSION']);await AU.signInWithEmailAndPassword(u.includes('@')?u:u.toLowerCase()+'@mmt.local',p);$('#le').textContent=''}
+ catch(e){const c=e.code||'';$('#le').textContent=/invalid|wrong|user-not-found/.test(c)?'Username atau password salah.':c=='auth/operation-not-allowed'?'Aktifkan Email/Password di Firebase Authentication.':c=='auth/too-many-requests'?'Terlalu banyak percobaan, coba lagi nanti.':'Gagal masuk: '+c;$('#lp').value=''}}
+function showLogin(){if($('#lgn'))return;const s=D.set,d=document.createElement('div');d.id='lgn';d.className='lgn';
  d.innerHTML=`<div class="box">${s.logo?`<img class="logo" src="${s.logo}" alt="">`:`<div class="logo">${esc(s.nama[0]||'M')}</div>`}<h1>${esc(s.nama)}</h1><div style="color:var(--mut)">Monitoring Operasional Tim OP. Silakan masuk.</div>
  <label for="lu">Username</label><input id="lu" autocomplete="username" autocapitalize="none"><label for="lp">Password</label><input id="lp" type="password" autocomplete="current-password">
  <label class="ck"><input id="lk" type="checkbox">Tetap masuk di perangkat ini</label><div class="err" id="le" role="alert"></div><button id="lb" style="width:100%;margin-top:6px">Masuk</button></div>`;
  document.body.appendChild(d);$('#lb').onclick=doLogin;d.addEventListener('keydown',e=>{if(e.key=='Enter')doLogin()});$('#lu').focus()}
-function start(){go();fbInit()}
-if(authed())start();else showLogin();
+function start(){if(started)return;started=true;go();fbInit()}
+function boot(){if(authed())start();else showLogin()}
+boot();
 </script></body></html>
