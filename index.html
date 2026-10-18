@@ -63,7 +63,7 @@ tr.drag{background:var(--soft);box-shadow:0 4px 14px rgba(0,0,0,.28)}tr.drag .hd
 <div class="app"><nav id="nav"></nav><main id="main"></main></div>
 <datalist id="dl"></datalist><div id="mo"></div><div id="toast"></div>
 <script>
-const JAB=['Teknisi','Helper','Magang/PSG','Supervisor','Admin','HR'],AREAS=['Makassar 1','Makassar 2','Gowa','BTP','SPK','Lainnya'];
+const JAB=['Teknisi','Helper','Magang/PSG','Supervisor','Admin','HR'],AREAS=['Makassar 1','Makassar 2','Gowa','BTP','SPK','Kantoran','Lainnya'];
 const JENIS=['Izin','Sakit','Cuti','Libur','Telat Izin','Cepat Pulang','Tanpa Keterangan'],ABS=['Izin','Sakit','Cuti','Libur','Tanpa Keterangan'];
 const COL=['#1e3a8a','#2563eb','#38bdf8','#7dd3fc','#6366f1','#0d9488','#f59e0b','#94a3b8'];
 const KEY='mmt_ops_v1';
@@ -169,7 +169,7 @@ function dash(){const t=today(),K=D.karyawan,tot=K.length,w=weekR(),mo=[t.slice(
  const pk=[...['Teknisi','Helper','Magang/PSG','Supervisor'].map(j=>({l:j,v:cn(j)})),{l:'PKL Sekolah',v:D.pkl.length}];const pkH=bars(pk,'kl');
  const chips=JENIS.map(j=>`<span class="chip" onclick="il('${j}')">${j}: ${iz.filter(e=>e.jenis==j).length}</span>`).join('');
  const tm=D.tim[TD]||[],pts=[];for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const s=d.toLocaleDateString('sv');pts.push({l:s.slice(8)+'/'+s.slice(5,7),v:(D.tim[s]||[]).length})}
- return`<div class="top"><h1>Dashboard Operasional</h1><div class="row"><span style="color:var(--mut)">${new Date().toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</span><button class="sec" onclick="exD()">Tarik Data Excel</button></div></div>
+ return`<div class="top"><h1>Dashboard Operasional</h1><div class="row"><span style="color:var(--mut)">${new Date().toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</span><span class="chip" id="ns2" onclick="V='set';go()">☁ ${esc(FS)}</span><button class="sec" onclick="exD()">Tarik Data Excel</button></div></div>
  <div class="card"><h2>Jumlah Karyawan Operasional</h2><div class="g g3">${per}</div>
  <div class="g g3" style="margin-top:12px"><div class="stat cl" onclick="kl('Teknisi')"><small>Jumlah Teknisi (klik untuk daftar)</small><b>${cn('Teknisi')}</b></div><div class="stat cl" onclick="kl('Helper')"><small>Jumlah Helper (klik untuk daftar)</small><b>${cn('Helper')}</b></div><div class="stat cl" onclick="kl('Magang/PSG')"><small>Magang/PSG</small><b>${cn('Magang/PSG')}</b></div><div class="stat cl" onclick="kl('PKL Sekolah')"><small>PKL Sekolah</small><b>${D.pkl.length}</b></div></div></div>
  <div class="g g2"><div class="card col"><h2>Komposisi Karyawan <span style="color:var(--mut);font-weight:500">(total ${pk.reduce((a,b)=>a+b.v,0)}, klik batang untuk daftar)</span></h2>${pkH}</div>
@@ -188,7 +188,7 @@ function setv(){const s=D.set;return`<div class="top"><h1>Pengaturan</h1></div><
  <label for="s_hr">Nama HR</label><input id="s_hr" value="${esc(s.hr)}">
  <label for="s_wa">Nomor WhatsApp HR</label><input id="s_wa" value="${esc(s.wa)}" placeholder="08xxxxxxxxxx">
  <h2 style="margin-top:22px">Sinkronisasi Firebase (opsional)</h2><p style="color:var(--mut);margin:0 0 6px">Tempel firebaseConfig dari Firebase Console (Project settings, Web app). Data disimpan di Cloud Firestore dan sinkron antar perangkat.</p><label for="s_fb">firebaseConfig</label><textarea id="s_fb" rows="6" placeholder='{ "apiKey": "...", "authDomain": "...", "projectId": "...", "appId": "..." }'>${esc(FBC?JSON.stringify(FBC,null,1):'')}</textarea><div class="row" style="margin-top:8px"><button class="sec" onclick="fbSave()">Simpan dan hubungkan</button><button class="sec" onclick="fbOff()">Putuskan</button><span id="fbst" style="color:var(--mut)">Status: ${esc(FS)}</span></div>
- <div class="row" style="margin-top:16px"><button onclick="saveS()">Simpan pengaturan</button><button class="sec" onclick="exAll()">Tarik semua data (Excel)</button><button class="dng" onclick="cf('Hapus SEMUA data aplikasi? Tindakan ini tidak bisa dibatalkan.',()=>{const s=D.set;D={karyawan:[],izin:[],evaluasi:[],monitor:[],hrop:[],hrd:[],sop:[],pkl:[],tim:{},set:s};sv();go(1)})">Hapus semua data</button></div></div>`}
+ <div class="row" style="margin-top:16px"><button onclick="saveS()">Simpan pengaturan</button><button class="sec" onclick="exAll()">Tarik semua data (Excel)</button><button class="sec" onclick="forceUp()">Kirim data perangkat ini ke cloud</button><button class="sec" onclick="forceDown()">Ambil data dari cloud</button><button class="dng" onclick="cf('Hapus SEMUA data aplikasi? Tindakan ini tidak bisa dibatalkan.',()=>{const s=D.set;D={karyawan:[],izin:[],evaluasi:[],monitor:[],hrop:[],hrd:[],sop:[],pkl:[],tim:{},set:s};sv();go(1)})">Hapus semua data</button></div></div>`}
 async function saveS(){const f=$('#s_logo').files[0];if(f)D.set.logo=await imgSq(f,128);D.set.nama=$('#s_nama').value.trim()||'Mitra Multi Teknik';D.set.hr=$('#s_hr').value.trim();D.set.wa=$('#s_wa').value.trim();sv();toast('Pengaturan disimpan');go(1)}
 function exAll(){const o={};['karyawan','pkl','izin','evaluasi','monitor','hrop','hrd','sop'].forEach(k=>{const c=CFG[k];o[c.t]=D[k].map(e=>Object.fromEntries(c.c.map(x=>[x[0],x[1](e)])))});xlb(o,'Semua_Data_'+today())}
 /* ---------- Router ---------- */
@@ -201,7 +201,7 @@ function setFav(){const n=D.set.nama||'M',L=D.set.logo;document.title=n+' - Moni
 function imgSq(file,sz){return new Promise(res=>{const r=new FileReader();r.onload=()=>{const i=new Image();i.onload=()=>{const c=document.createElement('canvas');c.width=c.height=sz;const k=Math.min(i.width,i.height);c.getContext('2d').drawImage(i,(i.width-k)/2,(i.height-k)/2,k,k,0,0,sz,sz);res(c.toDataURL('image/png'))};i.onerror=()=>res('');i.src=r.result};r.readAsDataURL(file)})}
 function go(keep){setFav();if(!keep&&typeof keep!='number'){}if(keep!==1){Q='';IF='Semua';DF=today()}
  const s=D.set,wa=(s.wa||'').replace(/\D/g,'').replace(/^0/,'62');
- $('#nav').innerHTML=`<div class="brand">${s.logo?`<img src="${s.logo}" alt="">`:`<i>${esc(s.nama[0]||'M')}</i>`}<span>${esc(s.nama)}</span></div>`+MENU.map(m=>`<a class="${V==m[0]?'on':''}" tabindex="0" onclick="V='${m[0]}';go()">${m[1]}</a>`).join('')+`<a onclick="togTheme()">Ganti tema Dark/White</a><a onclick="logout()">Keluar</a><div class="hr">${s.hr?'HR: '+esc(s.hr)+'<br>':''}${wa?`<a href="https://wa.me/${wa}" target="_blank" rel="noopener">Hubungi via WhatsApp</a>`:''}</div>`;
+ $('#nav').innerHTML=`<div class="brand">${s.logo?`<img src="${s.logo}" alt="">`:`<i>${esc(s.nama[0]||'M')}</i>`}<span>${esc(s.nama)}</span></div>`+MENU.map(m=>`<a class="${V==m[0]?'on':''}" tabindex="0" onclick="V='${m[0]}';go()">${m[1]}</a>`).join('')+`<a onclick="togTheme()">Ganti tema Dark/White</a><a onclick="logout()">Keluar</a><div class="hr"><div id="ns" style="margin-bottom:6px">☁ ${esc(FS)}</div>${s.hr?'HR: '+esc(s.hr)+'<br>':''}${wa?`<a href="https://wa.me/${wa}" target="_blank" rel="noopener">Hubungi via WhatsApp</a>`:''}</div>`;
  $('#dl').innerHTML=D.karyawan.map(k=>`<option value="${esc(k.nama)}">${esc(k.jabatan)}</option>`).join('')+D.pkl.map(k=>`<option value="${esc(k.nama)}">PKL Sekolah</option>`).join('');
  $('#main').innerHTML=V=='dash'?dash():V=='set'?setv():lst(V);
  const si=document.querySelector('input[type=search]');if(si&&keep===1&&Q){si.focus();si.setSelectionRange(Q.length,Q.length)}}
@@ -215,12 +215,15 @@ function ld(u){return new Promise((r,j)=>{const x=document.createElement('script
 function fbSave(){let t=$('#s_fb').value.trim(),o;try{o=JSON.parse(t)}catch(e){try{t=t.slice(t.indexOf('{'),t.lastIndexOf('}')+1).replace(/'/g,'"').replace(/([{,]\s*)(\w+)\s*:/g,'$1"$2":').replace(/,\s*}/g,'}');o=JSON.parse(t)}catch(x){toast('Format firebaseConfig tidak valid');return}}
  if(!o.projectId||!o.apiKey){toast('apiKey dan projectId wajib ada');return}localStorage.setItem('mmt_fb',JSON.stringify(o));location.reload()}
 function fbOff(){localStorage.setItem('mmt_fb','off');location.reload()}
-function fbErr(e){FS='Gagal: '+(e&&e.message||e);const el=$('#fbst');if(el)el.textContent='Status: '+FS;toast('Firebase: '+(e&&e.code||'error'))}
+function upSt(){['#ns','#ns2'].forEach(i=>{const e=$(i);if(e)e.textContent='☁ '+FS})}
+function forceUp(){if(!FB){toast('Belum terhubung ke Firebase');return}FC={};fbPush();toast('Data perangkat ini dikirim ke cloud')}
+function forceDown(){cf('Ganti data di perangkat ini dengan data dari cloud? Data yang belum terkirim akan hilang.',()=>{COLS.forEach(k=>{D[k]=[];try{localStorage.removeItem('mmt_sy_'+k)}catch(e){}});D.tim={};loc();location.reload()})}
+function fbErr(e){FS='Gagal: '+(e&&e.message||e);upSt();const el=$('#fbst');if(el)el.textContent='Status: '+FS;toast('Firebase: '+(e&&e.code||'error'))}
 function rr(){if($('#mo').innerHTML||DR)return;const a=document.activeElement;if(a&&a.matches&&a.matches('input,textarea,select'))return;go(1)}
-async function fbInit(){if(!FBC)return;try{const b='https://www.gstatic.com/firebasejs/10.12.2/';await ld(b+'firebase-app-compat.js');await ld(b+'firebase-firestore-compat.js');firebase.initializeApp(FBC);FB=firebase.firestore();FS='Menghubungkan...';
- let pend=COLS.length+2;const first=()=>{if(--pend==0){FREADY=true;FS='Terhubung ke '+FBC.projectId;const el=$('#fbst');if(el)el.textContent='Status: '+FS}};
+async function fbInit(){if(!FBC)return;try{const b='https://www.gstatic.com/firebasejs/10.12.2/';await ld(b+'firebase-app-compat.js');await ld(b+'firebase-firestore-compat.js');firebase.initializeApp(FBC);FB=firebase.firestore();try{FB.settings({experimentalAutoDetectLongPolling:true})}catch(e){}FS='Menghubungkan...';upSt();
+ let pend=COLS.length+2;const first=()=>{if(--pend==0){FREADY=true;FS='Terhubung ke '+FBC.projectId;const el=$('#fbst');if(el)el.textContent='Status: '+FS;upSt()}};
  COLS.forEach(k=>{let f=true;FB.collection(k).onSnapshot(s=>{const arr=s.docs.map(d=>d.data()).sort((a,b)=>(a.ord||0)-(b.ord||0));
-  if(f){f=false;first();if(!arr.length&&D[k].length){fbPush(k);return}}
+  if(f){f=false;first();const fk='mmt_sy_'+k;let nw=false;try{nw=!localStorage.getItem(fk);localStorage.setItem(fk,'1')}catch(e){}const ex=new Set(arr.map(e=>e.id)),lo=nw?D[k].filter(e=>e.id&&!ex.has(e.id)):[];if(lo.length){D[k]=[...arr,...lo];arr.forEach(e=>FC[k+'|'+e.id]=JSON.stringify(e));loc();fbPush(k);rr();return}}
   if(JSON.stringify(arr)==JSON.stringify(D[k]))return;D[k]=arr;arr.forEach(e=>FC[k+'|'+e.id]=JSON.stringify(e));Object.keys(FC).filter(x=>x.startsWith(k+'|')&&!arr.some(e=>x==k+'|'+e.id)).forEach(x=>delete FC[x]);loc();rr()},fbErr)});
  let ft=true;FB.collection('tim').onSnapshot(s=>{const o={};s.docs.forEach(d=>o[d.id]=d.data().list||[]);if(ft){ft=false;first();if(!s.size&&Object.keys(D.tim).length){fbPush('tim');return}}
   if(JSON.stringify(o)==JSON.stringify(D.tim))return;D.tim=o;Object.keys(FC).filter(x=>x.startsWith('tim|')).forEach(x=>delete FC[x]);Object.keys(o).forEach(d=>FC['tim|'+d]=JSON.stringify(o[d]));loc();rr()},fbErr);
