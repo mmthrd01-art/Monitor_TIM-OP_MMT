@@ -101,6 +101,14 @@ function pkg(f,v){const r=D.pkl.filter(x=>((x[f]||'').trim()||'Tidak diisi')==v)
 const pks=i=>pkg('sekolah',PIE.pks[i].l),pkj=v=>pkg('jurusan',v);
 function bars(items,fn){const tot=items.reduce((a,b)=>a+b.v,0),m=Math.max(1,...items.map(i=>i.v));if(!tot)return'<div class="empty">Belum ada data karyawan</div>';
  return`<div class="bars">${items.map((it,i)=>`<div class="br" role="button" tabindex="0" onclick="${fn}('${esc(it.l).replace(/'/g,"\\'")}')" onkeydown="if(event.key=='Enter')${fn}('${esc(it.l).replace(/'/g,"\\'")}')"><div class="l"><span>${esc(it.l)}</span><span><b>${it.v}</b> <small style="color:var(--mut)">(${Math.round(it.v/tot*100)}%)</small></span></div><div class="t"><div class="f" style="width:${it.v/m*100}%;background:${COL[i%COL.length]}"></div></div></div>`).join('')}</div>`}
+function lines(labels,S,lab){const W=640,H=270,pl=34,pr=18,pt=34,pb=34,n=labels.length,mx=Math.max(1,...S.flatMap(s=>s.v)),step=mx<=5?1:mx<=10?2:mx<=25?5:mx<=60?10:Math.ceil(mx/5/10)*10,top=Math.ceil(mx/step)*step;
+ const X=i=>pl+(n>1?i*(W-pl-pr)/(n-1):(W-pl-pr)/2),Y=v=>H-pb-(v/top)*(H-pt-pb);
+ let s=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" role="img" aria-label="${esc(lab)}">`;
+ for(let v=0;v<=top;v+=step)s+=`<line x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${pl-6}" y="${Y(v)+4}" text-anchor="end" font-size="10" fill="var(--mut)">${v}</text>`;
+ S.forEach(se=>{s+=`<polyline fill="none" stroke="${se.c}" stroke-width="2.5" stroke-linejoin="round" points="${se.v.map((v,i)=>X(i)+','+Y(v)).join(' ')}"/>`;se.v.forEach((v,i)=>{s+=`<circle cx="${X(i)}" cy="${Y(v)}" r="3.6" fill="${se.c}"><title>${esc(se.n)} ${labels[i]}: ${v}</title></circle><text x="${X(i)}" y="${Y(v)-8}" text-anchor="middle" font-size="9.5" font-weight="700" fill="var(--ink)">${v}</text>`})});
+ labels.forEach((l,i)=>{s+=`<text x="${X(i)}" y="${H-12}" text-anchor="middle" font-size="9.5" fill="var(--mut)">${l}</text>`});
+ const lg=S.length>1?`<div class="chips">${S.map(se=>`<span class="chip" style="cursor:default"><i style="background:${se.c};width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px"></i>${esc(se.n)}</span>`).join('')}</div>`:'';
+ return lg+'<div class="tw"><div style="min-width:520px">'+s+'</svg></div></div>'}
 /* ---------- Modal ---------- */
 function modal(h){$('#mo').innerHTML=`<div class="mo" onclick="if(event.target==this)cm()"><div class="md" role="dialog">${h}</div></div>`}
 function cm(){$('#mo').innerHTML=''}
@@ -149,24 +157,33 @@ function edt(k,id){const e=D[k].find(x=>x.id==id);frm('Ubah - '+CFG[k].t,CFG[k].
 function del(k,id){cf('Hapus data ini?',()=>{D[k]=D[k].filter(x=>x.id!=id);sv();go(1)})}
 function exl(k){const c=CFG[k];xlb({[c.t]:D[k].map(e=>Object.fromEntries(c.c.map(x=>[x[0],x[1](e)])))},c.t.replace(/\s/g,'_')+'_'+today())}
 /* ---------- Tim jalan ---------- */
-const tf=[{k:'area',l:'Area',t:'select',o:AREAS},{...N,k:'t',l:'Teknisi'},{...N,k:'h1',l:'Helper 1'},{...N,k:'h2',l:'Helper 2'},{...N,k:'m',l:'Magang/PSG'}];
-tf.forEach(f=>f.req=0);
-function addTim(){frm('Tambah Tim - '+fd(TD),tf,{},o=>{(D.tim[TD]=D.tim[TD]||[]).push(o);sv();go(1)})}
-function edTim(i){frm('Ubah Tim '+(i+1),tf,D.tim[TD][i],o=>{D.tim[TD][i]=o;sv();go(1)})}
-function delTim(i){cf('Hapus Tim '+(i+1)+'?',()=>{D.tim[TD].splice(i,1);sv();go(1)})}
+const tf=[{k:'area',l:'Area',t:'select',o:AREAS},{k:'n',l:'Jumlah Tim',t:'number'}];
+const tn=x=>x.n==null||x.n===''?1:(parseInt(x.n)||0);
+const tc=a=>(a||[]).reduce((s,x)=>s+tn(x),0);
+const tby=a=>{const m={};(a||[]).forEach(x=>{const k=x.area||'Lainnya';m[k]=(m[k]||0)+tn(x)});return m};
+let TA=[];
+function putTim(o){const n=parseInt(o.n)||0,a=o.area,l=(D.tim[TD]||[]).filter(x=>(x.area||'Lainnya')!=a);if(n>0)l.push({area:a,n});D.tim[TD]=l;sv();go(1)}
+function addTim(){frm('Tambah Tim - '+fd(TD),tf,{n:''},o=>putTim(o))}
+function edTim(i){const a=TA[i];frm('Ubah Jumlah Tim - '+a.l,tf,{area:a.l,n:String(a.v)},o=>{D.tim[TD]=(D.tim[TD]||[]).filter(x=>(x.area||'Lainnya')!=a.l);putTim(o)})}
+function delTim(i){const a=TA[i];cf('Hapus data tim '+a.l+'?',()=>{D.tim[TD]=(D.tim[TD]||[]).filter(x=>(x.area||'Lainnya')!=a.l);sv();go(1)})}
 function shD(n){const d=new Date((DF||today())+'T00:00:00');d.setDate(d.getDate()+n);DF=d.toLocaleDateString('sv');go(1)}
 function setTD(v){TD=v||today();go(1)}
 /* ---------- Dashboard ---------- */
+const hd=(d,j)=>{const nm=new Set(D.izin.filter(e=>ABS.includes(e.jenis)&&ov(e,d,d)).map(e=>e.nama.toLowerCase()));return D.karyawan.filter(k=>k.jabatan==j&&!nm.has(k.nama.toLowerCase())).length};
+const dys=n=>{const r=[];for(let i=n-1;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);r.push(d.toLocaleDateString('sv'))}return r};
 function dash(){const t=today(),K=D.karyawan,tot=K.length,w=weekR(),mo=[t.slice(0,8)+'01',t.slice(0,8)+'31'];
  const ab=(a,b)=>new Set(D.izin.filter(e=>ABS.includes(e.jenis)&&ov(e,a,b)).map(e=>e.nama.toLowerCase())).size;
  const per=[['Hari ini',t,t],['Minggu ini',w[0],w[1]],['Bulan ini',mo[0],mo[1]]].map(p=>{const a=ab(p[1],p[2]);return`<div class="stat"><small>${p[0]}</small><b>${Math.max(0,tot-a)}</b><small>siap bertugas dari ${tot} karyawan, ${a} ada izin/libur</small></div>`}).join('');
  const cn=j=>K.filter(k=>k.jabatan==j).length,iz=izT();
  const pk=[...['Teknisi','Helper','Magang/PSG','Supervisor'].map(j=>({l:j,v:cn(j)})),{l:'PKL Sekolah',v:D.pkl.length}];const pkH=bars(pk,'kl');
  const chips=JENIS.map(j=>`<span class="chip" onclick="il('${j}')">${j}: ${iz.filter(e=>e.jenis==j).length}</span>`).join('');
- const tm=D.tim[TD]||[],lb=TD==t?'Hari Ini':fd(TD),ar={};tm.forEach(x=>{const a=x.area||'Lainnya';ar[a]=(ar[a]||0)+1});
- const nT=tm.filter(x=>x.t).length,nH=tm.reduce((s,x)=>s+(x.h1?1:0)+(x.h2?1:0),0),nM=tm.filter(x=>x.m).length;
- const aI=Object.entries(ar).map(([l,v])=>({l,v})),mx=Math.max(1,...aI.map(i=>i.v));
- const aH=aI.length?`<div class="bars">${aI.map((i,n)=>`<div class="br" style="cursor:default"><div class="l"><span>${esc(i.l)}</span><b>${i.v} Tim</b></div><div class="t"><div class="f" style="width:${i.v/mx*100}%;background:${COL[n%COL.length]}"></div></div></div>`).join('')}</div>`:'<div class="empty">Belum ada tim jalan pada tanggal ini.</div>';
+ const tm=D.tim[TD]||[],lb=TD==t?'Hari Ini':fd(TD),ar=tby(tm);
+ const aI=Object.entries(ar).filter(e=>e[1]>0).map(([l,v])=>({l,v}));TA=aI;const mx=Math.max(1,...aI.map(i=>i.v));
+ const nT=hd(TD,'Teknisi'),nH=hd(TD,'Helper'),nM=hd(TD,'Magang/PSG');
+ const aH=aI.length?`<div class="bars">${aI.map((i,n)=>`<div class="br" style="cursor:default"><div class="l"><span>${esc(i.l)}</span><b>${i.v} Tim</b></div><div class="t"><div class="f" style="width:${i.v/mx*100}%;background:${COL[n%COL.length]}"></div></div></div>`).join('')}</div>`:'<div class="empty">Belum ada tim jalan pada tanggal ini. Klik + Tambah Tim.</div>';
+ const ds=dys(14),dl=ds.map(s=>s.slice(8)+'/'+s.slice(5,7)),sT=ds.map(d=>hd(d,'Teknisi')),sH=ds.map(d=>hd(d,'Helper'));
+ const cTim=lines(dl,[{n:'Jumlah Tim',c:'#2563eb',v:ds.map(d=>tc(D.tim[d]))}],'Grafik jumlah tim jalan per hari');
+ const cHad=lines(dl,[{n:'Teknisi',c:'#2563eb',v:sT},{n:'Helper',c:'#f59e0b',v:sH},{n:'Total Hadir',c:'#94a3b8',v:sT.map((v,i)=>v+sH[i])}],'Grafik kehadiran teknisi dan helper per hari');
  return`<div class="top"><h1>Dashboard Operasional</h1><div class="row"><span style="color:var(--mut)">${new Date().toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</span><span class="chip" id="ns2" onclick="V='set';go()">☁ ${esc(FS)}</span><button class="sec" onclick="exD()">Tarik Semua Data (1 Excel)</button></div></div>
  <div class="card"><h2>Jumlah Karyawan Operasional</h2><div class="g g3">${per}</div>
  <div class="g g3" style="margin-top:12px"><div class="stat cl" onclick="kl('Teknisi')"><small>Jumlah Teknisi (klik untuk daftar)</small><b>${cn('Teknisi')}</b></div><div class="stat cl" onclick="kl('Helper')"><small>Jumlah Helper (klik untuk daftar)</small><b>${cn('Helper')}</b></div><div class="stat cl" onclick="kl('Magang/PSG')"><small>Magang/PSG</small><b>${cn('Magang/PSG')}</b></div><div class="stat cl" onclick="kl('PKL Sekolah')"><small>PKL Sekolah</small><b>${D.pkl.length}</b></div></div></div>
@@ -174,9 +191,11 @@ function dash(){const t=today(),K=D.karyawan,tot=K.length,w=weekR(),mo=[t.slice(
  <div class="card"><h2>Tim OP Izin Hari Ini</h2><div class="stat cl" style="margin-bottom:8px" onclick="il('Semua')"><small>Total tidak hadir/izin (klik untuk daftar)</small><b>${iz.length}</b></div><div class="chips">${chips}</div>${pie(JENIS.map(j=>({l:j,v:iz.filter(e=>e.jenis==j).length})),'ilp')}</div></div>
  <div class="g g2"><div class="card col"><h2>PKL Sekolah per Sekolah <span style="color:var(--mut);font-weight:500">(${D.pkl.length} siswa, klik untuk daftar)</span></h2>${pie(grp('sekolah'),'pks')}</div><div class="card col"><h2>PKL Sekolah per Jurusan</h2>${bars(grp('jurusan'),'pkj')}</div></div>
  <div class="card"><div class="top" style="margin-bottom:10px"><h2 style="margin:0">Tim Jalan - ${lb}</h2><div class="row"><input type="date" value="${TD}" onchange="setTD(this.value)" aria-label="Tanggal"><button onclick="addTim()">+ Tambah Tim</button></div></div>
- <div class="g g3"><div class="stat"><small>Jumlah Teknisi ${lb}</small><b>${nT}</b></div><div class="stat"><small>Jumlah Helper ${lb}</small><b>${nH}</b></div><div class="stat"><small>Jumlah PSG ${lb}</small><b>${nM}</b></div><div class="stat"><small>Total Tim</small><b>${tm.length}</b></div></div>
+ <div class="g g3"><div class="stat"><small>Jumlah Teknisi ${lb} (hadir)</small><b>${nT}</b></div><div class="stat"><small>Jumlah Helper ${lb} (hadir)</small><b>${nH}</b></div><div class="stat"><small>Jumlah PSG ${lb} (hadir)</small><b>${nM}</b></div><div class="stat"><small>Total Tim Jalan</small><b>${tc(tm)}</b></div></div>
  <h2 style="margin-top:18px">Grafik Jumlah Tim Jalan per Area</h2>${aH}
- <details style="margin-top:14px"><summary style="cursor:pointer;font-weight:700;color:var(--pri)">Kelola data tim (tambah / ubah / hapus)</summary><div style="margin-top:10px">${tm.length?tm.map((x,i)=>`<div class="team"><div class="row" style="justify-content:space-between"><span><b>Tim ${i+1}</b> &nbsp;Area: ${esc(x.area)}</span><span><button class="sec sm" onclick="edTim(${i})">Ubah</button><button class="dng" onclick="delTim(${i})">Hapus</button></span></div><div style="margin-top:6px">${[['Teknisi',x.t],['Helper 1',x.h1],['Helper 2',x.h2],['Magang/PSG',x.m]].filter(r=>r[1]).map(r=>`<span class="tag">${r[0]}: ${esc(r[1])}</span>`).join('')||'<span style="color:var(--mut)">Belum ada anggota</span>'}</div></div>`).join(''):'<div class="empty">Belum ada tim.</div>'}</div></details></div>`}
+ <details style="margin-top:14px"><summary style="cursor:pointer;font-weight:700;color:var(--pri)">Kelola data tim (ubah / hapus)</summary><div style="margin-top:10px">${aI.length?aI.map((x,i)=>`<div class="team"><div class="row" style="justify-content:space-between"><span><b>${esc(x.l)}</b> &nbsp;${x.v} Tim</span><span><button class="sec sm" onclick="edTim(${i})">Ubah</button><button class="dng" onclick="delTim(${i})">Hapus</button></span></div></div>`).join(''):'<div class="empty">Belum ada tim.</div>'}</div></details></div>
+ <div class="card"><h2>Grafik Jumlah Tim Jalan per Hari (14 hari terakhir)</h2>${cTim}</div>
+ <div class="card"><h2>Kehadiran Teknisi dan Helper per Hari (14 hari terakhir)</h2>${cHad}</div>`}
 function exD(){const t=today(),K=D.karyawan,w=weekR(),mo=[t.slice(0,8)+'01',t.slice(0,8)+'31'];
  const ab=(a,b)=>new Set(D.izin.filter(e=>ABS.includes(e.jenis)&&ov(e,a,b)).map(e=>e.nama.toLowerCase())).size;
  const siap=[['Hari ini',t,t],['Minggu ini',w[0],w[1]],['Bulan ini',mo[0],mo[1]]].map(p=>{const a=ab(p[1],p[2]);return{Periode:p[0],'Total Karyawan':K.length,'Izin/Libur':a,'Siap Bertugas':Math.max(0,K.length-a)}});
@@ -184,11 +203,12 @@ function exD(){const t=today(),K=D.karyawan,w=weekR(),mo=[t.slice(0,8)+'01',t.sl
  const iz=izT(),izR=JENIS.map(j=>({Jenis:j,Jumlah:iz.filter(e=>e.jenis==j).length}));
  const izD=iz.map(e=>({Nama:e.nama,Jabatan:jabOf(e.nama),Jenis:e.jenis,Alasan:e.alasan}));
  const sk=grp('sekolah').map(x=>({Sekolah:x.l,Jumlah:x.v})),jr=grp('jurusan').map(x=>({Jurusan:x.l,Jumlah:x.v}));
- const tt=D.tim[t]||[],ra={};tt.forEach(x=>{const a=x.area||'Lainnya';ra[a]=(ra[a]||0)+1});
- const th=[{Keterangan:'Jumlah Teknisi Hari Ini',Jumlah:tt.filter(x=>x.t).length},{Keterangan:'Jumlah Helper Hari Ini',Jumlah:tt.reduce((s,x)=>s+(x.h1?1:0)+(x.h2?1:0),0)},{Keterangan:'Jumlah PSG Hari Ini',Jumlah:tt.filter(x=>x.m).length},{Keterangan:'Total Tim Hari Ini',Jumlah:tt.length}];
+ const tt=D.tim[t]||[],ra=tby(tt);
+ const th=[{Keterangan:'Jumlah Teknisi Hari Ini (hadir)',Jumlah:hd(t,'Teknisi')},{Keterangan:'Jumlah Helper Hari Ini (hadir)',Jumlah:hd(t,'Helper')},{Keterangan:'Jumlah PSG Hari Ini (hadir)',Jumlah:hd(t,'Magang/PSG')},{Keterangan:'Total Tim Jalan Hari Ini',Jumlah:tc(tt)}];
  Object.keys(ra).forEach(a=>th.push({Keterangan:'Tim '+a+' Hari Ini',Jumlah:ra[a]}));
- const tr=[],td=[];Object.keys(D.tim).sort().forEach(d=>{const m={};D.tim[d].forEach((x,i)=>{const a=x.area||'Lainnya';m[a]=(m[a]||0)+1;td.push({Tanggal:fd(d),Tim:'Tim '+(i+1),Area:x.area,Teknisi:x.t,'Helper 1':x.h1,'Helper 2':x.h2,'Magang/PSG':x.m})});Object.keys(m).forEach(a=>tr.push({Tanggal:fd(d),Area:a,'Jumlah Tim':m[a]}))});
- const o={'Dash - Siap Bertugas':siap,'Dash - Komposisi Karyawan':rk,'Dash - Izin Hari Ini (Rekap)':izR,'Dash - Izin Hari Ini (Daftar)':izD,'Dash - PKL per Sekolah':sk,'Dash - PKL per Jurusan':jr,'Dash - Tim Jalan Hari Ini':th,'Dash - Tim per Area (Riwayat)':tr,'Dash - Detail Tim Jalan':td};
+ const tr=[];Object.keys(D.tim).sort().forEach(d=>{const m=tby(D.tim[d]);Object.keys(m).forEach(a=>tr.push({Tanggal:fd(d),Area:a,'Jumlah Tim':m[a]}))});
+ const kh=dys(14).map(d=>{const a=hd(d,'Teknisi'),b=hd(d,'Helper');return{Tanggal:fd(d),Teknisi:a,Helper:b,'Total Hadir':a+b,PSG:hd(d,'Magang/PSG'),'Jumlah Tim Jalan':tc(D.tim[d])}});
+ const o={'Dash - Siap Bertugas':siap,'Dash - Komposisi Karyawan':rk,'Dash - Izin Hari Ini (Rekap)':izR,'Dash - Izin Hari Ini (Daftar)':izD,'Dash - PKL per Sekolah':sk,'Dash - PKL per Jurusan':jr,'Dash - Tim Jalan Hari Ini':th,'Dash - Tim per Area (Riwayat)':tr,'Dash - Kehadiran 14 Hari':kh};
  ['karyawan','pkl','izin','evaluasi','monitor','hrop','hrd','sop'].forEach(k=>{const c=CFG[k];o[c.t]=D[k].map(e=>Object.fromEntries(c.c.map(x=>[x[0],x[1](e)])))});
  o['Pengaturan']=[{'Nama Aplikasi':D.set.nama,'Nama HR':D.set.hr,'Nomor WA':D.set.wa,'Tanggal Tarik':fd(t)}];
  xlb(o,'Semua_Data_MMT_'+t)}
